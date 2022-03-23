@@ -1,24 +1,21 @@
 package ru.liga;
 
-import ru.liga.controller.Controller;
-import ru.liga.repository.InMemoryRatesRepository;
-import ru.liga.service.ForecastAverage7DaysService;
-import ru.liga.service.ForecastService;
-import ru.liga.utils.ControllerSelection;
-import ru.liga.view.Console;
+import org.telegram.telegrambots.meta.TelegramBotsApi;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
+import ru.liga.telegram.Bot;
+import ru.liga.telegram.BotSettings;
 
-import java.io.IOException;
 
 public class App {
-    public static void main(String[] args) throws IOException {
-        InMemoryRatesRepository repository = new InMemoryRatesRepository();
-        ForecastService service = new ForecastAverage7DaysService(repository);
-        Console console = new Console();
+    private static final BotSettings botSettings = BotSettings.getInstance();
 
-        while (true) {
-            String command = console.insertCommand();
-            Controller controller = ControllerSelection.getController(command, service, console);
-            controller.operate();
+    public static void main(String[] args) {
+        try {
+            TelegramBotsApi botsApi = new TelegramBotsApi(DefaultBotSession.class);
+            botsApi.registerBot(new Bot(botSettings.getBotName(), botSettings.getBotToken()));
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
         }
     }
 }
