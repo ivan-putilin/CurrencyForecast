@@ -20,19 +20,53 @@ public class InMemoryRatesRepository {
 
         switch (currency) {
             case EUR:
-                fileName = "/EUR_F01_02_2002_T01_02_2022.csv";
+                fileName = "/EUR_F01_02_2005_T05_03_2022.csv";
                 break;
             case TRY:
-                fileName = "/TRY_F01_02_2002_T01_02_2022.csv";
+                fileName = "/TRY_F01_02_2005_T05_03_2022.csv";
                 break;
             case USD:
-                fileName = "/USD_F01_02_2002_T01_02_2022.csv";
+                fileName = "/USD_F01_02_2005_T05_03_2022.csv";
+                break;
+            case BGN:
+                fileName = "/BGN_F01_02_2005_T05_03_2022.csv";
+                break;
+            case AMD:
+                fileName = "/AMD_F01_02_2005_T05_03_2022.csv";
                 break;
             default:
                 fileName = "/EUR_F01_02_2002_T01_02_2022.csv";
         }
 
         List<Rate> resultData = reverseData(ParseCSV.parse(lineNumber, data, fileName));
+
+        return reverseData(resultData);
+    }
+
+    public List<Rate> getAllData(Currency currency) throws IOException {
+        List<Rate> data = new ArrayList<>();
+
+        switch (currency) {
+            case EUR:
+                fileName = "/EUR_F01_02_2005_T05_03_2022.csv";
+                break;
+            case TRY:
+                fileName = "/TRY_F01_02_2005_T05_03_2022.csv";
+                break;
+            case USD:
+                fileName = "/USD_F01_02_2005_T05_03_2022.csv";
+                break;
+            case BGN:
+                fileName = "/BGN_F01_02_2005_T05_03_2022.csv";
+                break;
+            case AMD:
+                fileName = "/AMD_F01_02_2005_T05_03_2022.csv";
+                break;
+            default:
+                fileName = "/EUR_F01_02_2002_T01_02_2022.csv";
+        }
+
+        List<Rate> resultData = reverseData(ParseCSV.parseAll(data, fileName));
 
         return reverseData(resultData);
     }
