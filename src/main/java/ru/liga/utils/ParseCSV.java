@@ -6,13 +6,15 @@ import ru.liga.model.Rate;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 
 public class ParseCSV {
     public static List<Rate> parse(int lineNumber, List<Rate> data, String fileName) throws IOException {
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(ParseCSV.class.getResourceAsStream(fileName), "windows-1251"))) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(Objects.requireNonNull(ParseCSV.class.getResourceAsStream(fileName)), "windows-1251"))) {
             int count = 0;
             String[] line;
 
@@ -35,25 +37,36 @@ public class ParseCSV {
         return data;
     }
 
-    public static List<Rate> parseAll(List<Rate> data, String fileName) throws IOException {
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(ParseCSV.class.getResourceAsStream(fileName), "windows-1251"))) {
-            String[] line;
-
-            if (reader.ready()) {
-                reader.readLine();
-            }
+    public static List<LocalDate> parseDatesOfMoon(List<LocalDate> data, String fileName) throws IOException {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(Objects.requireNonNull(ParseCSV.class.getResourceAsStream(fileName)), "windows-1251"))) {
+            String line;
             while (reader.ready()) {
-                line = reader.readLine().split(";");
-
-                Rate rate = new Rate(
-                        LocalDate.parse(line[1], DateTimeUtil.PARSE_FORMATTER),
-                        new BigDecimal(line[2].replace(',', '.').replace("\"", "")),
-                        getCurrency(line[3])
-                );
-                data.add(rate);
+                line = reader.readLine();
+                data.add(LocalDate.parse(line, DateTimeUtil.PARSE_FORMATTER));
             }
         }
         return data;
+    }
+
+    public static List<Rate> parseAll(List<Rate> data, String fileName) throws IOException {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(Objects.requireNonNull(ParseCSV.class.getResourceAsStream(fileName)), "windows-1251"))) {
+                String[] line;
+
+                if (reader.ready()) {
+                    reader.readLine();
+                }
+                while (reader.ready()) {
+                    line = reader.readLine().split(";");
+
+                    Rate rate = new Rate(
+                            LocalDate.parse(line[1], DateTimeUtil.PARSE_FORMATTER),
+                            new BigDecimal(line[2].replace(',', '.').replace("\"", "")),
+                            getCurrency(line[3])
+                    );
+                    data.add(rate);
+                }
+            }
+            return data;
     }
 
     private static Currency getCurrency(String currencyTitle) {
