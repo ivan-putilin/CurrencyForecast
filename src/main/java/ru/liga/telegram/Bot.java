@@ -1,5 +1,6 @@
 package ru.liga.telegram;
 
+
 import org.telegram.telegrambots.extensions.bots.commandbot.TelegramLongPollingCommandBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
@@ -47,9 +48,6 @@ public class Bot extends TelegramLongPollingCommandBot {
         return BOT_NAME;
     }
 
-    /**
-     * Ответ на запрос, не являющийся командой
-     */
     @Override
     public void processNonCommandUpdate(Update update) {
         if (update.hasMessage()) {
@@ -73,9 +71,21 @@ public class Bot extends TelegramLongPollingCommandBot {
 
         switch (command.getOutput()) {
             case "line":
-                sendMessage(chatId, AnswerFormatter.printDayRate(service.oneDayForecast(command.getCurrencies().get(0), command.getPeriodDate().get(0))));
+                if(!command.getPeriod().equals(Period.DAY)){
+                    throw new ParameterException("Не задан формат вывода для периода");
+                }
+                if (command.getCurrencies().size() > 1){
+                    throw new ParameterException("Прогноз на день доступен только для одной валюты, скорректируйте запрос");
+                }
+                    sendMessage(chatId, AnswerFormatter.printDayRate(service.oneDayForecast(command.getCurrencies().get(0), command.getPeriodDate().get(0))));
                 break;
             case "list":
+                if (command.getCurrencies().size() > 1){
+                    throw new ParameterException("Прогноз с выводом листа доступен только для одной валюты, скорректируйте запрос");
+                }
+                if(command.getPeriod().equals(Period.DAY)){
+                    throw new ParameterException("Не верно задан период или формат вывода");
+                }
                 StringBuilder answ = new StringBuilder("");
                 List<Rate> rates = service.periodForecast(command.getCurrencies().get(0), command.getPeriod());
 
@@ -85,6 +95,9 @@ public class Bot extends TelegramLongPollingCommandBot {
                 sendMessage(chatId, answ.toString());
                 break;
             case "graph":
+                if(command.getPeriod().equals(Period.DAY)){
+                    throw new ParameterException("Не верно задан период или формат вывода");
+                }
                 List<List<Rate>> ratesListOfLists = new ArrayList<>();
                 for (int i = 0; i < command.getCurrencies().size(); i++) {
                     ratesListOfLists.add(service.periodForecast(command.getCurrencies().get(i), command.getPeriod()));
@@ -132,9 +145,11 @@ public class Bot extends TelegramLongPollingCommandBot {
         List<LocalDate> periodLocaleDate = new ArrayList<>();
         String algorithm = null;
         String output = "line";
-        Command command = new Command(null, null, null, null, null);
 
         String[] commands = lineCommands.split(" ");
+        if (commands.length < 6 || commands.length % 2 != 0 || !commands[0].equals("rate")) {
+            throw new ParameterException("Недостаточно параметров или неверно задан запрос.");
+        }
         String[] currenciesArr = commands[1].split(",");
 
         for (String currency : currenciesArr) {
@@ -155,8 +170,7 @@ public class Bot extends TelegramLongPollingCommandBot {
                     currencies.add(Currency.BGN);
                     break;
                 default:
-                    throw new ParameterException("Неподдерживаемая валюта, либо некорректно задан ключ.\n" +
-                            "Доступные валюты USD, EUR,TRY,AMD,BGN");
+                    throw new ParameterException("Данная валюта не поддерживается.");
             }
         }
 
@@ -164,10 +178,15 @@ public class Bot extends TelegramLongPollingCommandBot {
 
             switch (commands[i]) {
                 case "-date":
-                    if (commands[i + 1].equals("tomorrow")) {
-                        periodLocaleDate.add(LocalDate.now().plusDays(1));
-                    } else {
-                        periodLocaleDate.add(LocalDate.parse(commands[i + 1], DateTimeUtil.PARSE_FORMATTER));
+                    try {
+                        if (commands[i + 1].equals("tomorrow")) {
+                            periodLocaleDate.add(LocalDate.now().plusDays(1));
+                        } else {
+                            periodLocaleDate.add(LocalDate.parse(commands[i + 1], DateTimeUtil.PARSE_FORMATTER));
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        throw new ParameterException("Неверный формат даты, введите \"tomorrow\" или дату в формате dd.MM.yyyy");
                     }
                     period = Period.DAY;
                     break;
@@ -180,21 +199,24 @@ public class Bot extends TelegramLongPollingCommandBot {
                             period = Period.MONTH;
                             break;
                         default:
-                            throw new ParameterException("Неверный период, либо некорректно задан ключ.\n" +
-                                    "Доступные периоды week, month");
+                            throw new ParameterException("Неверно задан период!");
                     }
                     break;
                 case "-alg":
                     algorithm = commands[i + 1];
+                    if(!algorithm.equals("moon") && !algorithm.equals("linear") && !algorithm.equals("actual")){
+                        throw new ParameterException("Алгоритм введен некорректно!");
+                    }
                     break;
                 case "-output":
                     output = commands[i + 1];
+                    if(!output.equals("list") && !output.equals("graph")){
+                        throw new ParameterException("Неверно задан формат вывода!");
+                    }
                     break;
                 default:
-                    throw new ParameterException("Неверно задан запрос\n" +
-                            "Введите запрос в формате: \"rate USD,TRY -period month -alg moon -output graph\"");
+                    throw new ParameterException("Неверно задан запрос");
             }
-
         }
 
         return new Command(currencies, period, periodLocaleDate, algorithm, output);
@@ -213,7 +235,7 @@ public class Bot extends TelegramLongPollingCommandBot {
         }
     }
 
-    public void sendImage(Long chatId, String path) throws TelegramException {
+    public void sendImage(Long chatId, String path) {
         try {
             SendPhoto photo = new SendPhoto();
             photo.setPhoto(new InputFile(new File(path)));
