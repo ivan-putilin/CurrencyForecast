@@ -1,6 +1,8 @@
 package ru.liga.telegram;
 
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.telegram.telegrambots.extensions.bots.commandbot.TelegramLongPollingCommandBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
@@ -27,6 +29,9 @@ import java.util.List;
 
 
 public class Bot extends TelegramLongPollingCommandBot {
+
+    private static final Logger logger = LoggerFactory.getLogger(TelegramLongPollingCommandBot.class);
+
     private final String BOT_NAME;
     private final String BOT_TOKEN;
     private InMemoryRatesRepository repository;
@@ -50,6 +55,7 @@ public class Bot extends TelegramLongPollingCommandBot {
 
     @Override
     public void processNonCommandUpdate(Update update) {
+        logger.info("Message processing, get update");
         if (update.hasMessage()) {
             Message message = update.getMessage();
             Long chatId = update.getMessage().getChatId();
@@ -59,12 +65,15 @@ public class Bot extends TelegramLongPollingCommandBot {
             } catch (ParameterException | TelegramException | DataException e) {
                 e.printStackTrace();
                 sendMessage(chatId, e.getMessage());
+                logger.error(e.getMessage(), e);
             }
 
         }
     }
 
     private void execCommand(Long chatId, Command command) throws ParameterException, TelegramException, DataException {
+
+        logger.debug("Execute command: {}", command.toString());
 
         repository = new InMemoryRatesRepository();
         setService(command);
@@ -86,7 +95,7 @@ public class Bot extends TelegramLongPollingCommandBot {
                 if(command.getPeriod().equals(Period.DAY)){
                     throw new ParameterException("Не верно задан период или формат вывода");
                 }
-                StringBuilder answ = new StringBuilder("");
+                StringBuilder answ = new StringBuilder();
                 List<Rate> rates = service.periodForecast(command.getCurrencies().get(0), command.getPeriod());
 
                 for (Rate rate : rates) {
@@ -105,7 +114,7 @@ public class Bot extends TelegramLongPollingCommandBot {
                 ForecastPlot forecastPlot = new ForecastPlot(ratesListOfLists);
                 forecastPlot.createPlot();
 
-                sendImage(chatId, "C:/Users/Ivan/IdeaProjects/LigaIntership/CurrencyForecast/forecast.png");
+                sendImage(chatId, "./forecast.png");
 
                 break;
             default:
@@ -121,6 +130,7 @@ public class Bot extends TelegramLongPollingCommandBot {
     }
 
     private void setService(Command command) throws ParameterException {
+        logger.debug("Set service for alg: {}", command.getAlgorithm());
         switch (command.getAlgorithm()) {
             case "actual":
                 service = new ActualAlgorithm(repository);
@@ -140,6 +150,8 @@ public class Bot extends TelegramLongPollingCommandBot {
     }
 
     private Command parseCommand(String lineCommands) throws ParameterException {
+
+        logger.debug("Parsing line command: {}", lineCommands);
         List<Currency> currencies = new ArrayList<>();
         Period period = null;
         List<LocalDate> periodLocaleDate = new ArrayList<>();
@@ -219,7 +231,12 @@ public class Bot extends TelegramLongPollingCommandBot {
             }
         }
 
-        return new Command(currencies, period, periodLocaleDate, algorithm, output);
+        Command command = new Command(currencies, period, periodLocaleDate, algorithm, output);
+
+        logger.info("Command string successfully parsed");
+        logger.debug("Command: {}", command);
+
+        return command;
     }
 
     public void sendMessage(Long chatId, String message) {
@@ -231,7 +248,8 @@ public class Bot extends TelegramLongPollingCommandBot {
                     .build();
             execute(sendMessage);
         } catch (TelegramApiException e) {
-            //log.error(String.format("Sending message error: %s", e.getMessage()));
+            e.printStackTrace();
+            logger.error(String.format("Sending message error: %s", e.getMessage()));
         }
     }
 
@@ -242,8 +260,8 @@ public class Bot extends TelegramLongPollingCommandBot {
             photo.setChatId(chatId.toString());
             execute(photo);
         } catch (TelegramApiException e) {
-            //log.error(String.format("Sending image error: %s", e.getMessage()));
             e.printStackTrace();
+            logger.error(String.format("Sending image error: %s", e.getMessage()));
         }
     }
 

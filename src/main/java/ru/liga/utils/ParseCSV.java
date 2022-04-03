@@ -1,7 +1,10 @@
 package ru.liga.utils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.liga.model.Currency;
 import ru.liga.model.Rate;
+import ru.liga.telegram.BotSettings;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -13,6 +16,9 @@ import java.util.List;
 import java.util.Objects;
 
 public class ParseCSV {
+
+    private static final Logger logger = LoggerFactory.getLogger(ParseCSV.class);
+
     public static List<Rate> parse(int lineNumber, List<Rate> data, String fileName) throws IOException {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(Objects.requireNonNull(ParseCSV.class.getResourceAsStream(fileName)), "windows-1251"))) {
             int count = 0;
@@ -34,6 +40,7 @@ public class ParseCSV {
                 count++;
             }
         }
+        logger.info("Files of rates was parsed");
         return data;
     }
 
@@ -45,28 +52,30 @@ public class ParseCSV {
                 data.add(LocalDate.parse(line, DateTimeUtil.PARSE_FORMATTER));
             }
         }
+        logger.info("Files dates of full moons was parsed");
         return data;
     }
 
     public static List<Rate> parseAll(List<Rate> data, String fileName) throws IOException {
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(Objects.requireNonNull(ParseCSV.class.getResourceAsStream(fileName)), "windows-1251"))) {
-                String[] line;
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(Objects.requireNonNull(ParseCSV.class.getResourceAsStream(fileName)), "windows-1251"))) {
+            String[] line;
 
-                if (reader.ready()) {
-                    reader.readLine();
-                }
-                while (reader.ready()) {
-                    line = reader.readLine().split(";");
-
-                    Rate rate = new Rate(
-                            LocalDate.parse(line[1], DateTimeUtil.PARSE_FORMATTER),
-                            new BigDecimal(line[2].replace(',', '.').replace("\"", "")),
-                            getCurrency(line[3])
-                    );
-                    data.add(rate);
-                }
+            if (reader.ready()) {
+                reader.readLine();
             }
-            return data;
+            while (reader.ready()) {
+                line = reader.readLine().split(";");
+
+                Rate rate = new Rate(
+                        LocalDate.parse(line[1], DateTimeUtil.PARSE_FORMATTER),
+                        new BigDecimal(line[2].replace(',', '.').replace("\"", "")),
+                        getCurrency(line[3])
+                );
+                data.add(rate);
+            }
+        }
+        logger.info("Files of rates was parsed");
+        return data;
     }
 
     private static Currency getCurrency(String currencyTitle) {

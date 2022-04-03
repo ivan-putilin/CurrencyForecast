@@ -1,5 +1,8 @@
 package ru.liga.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import ru.liga.exceptions.DataException;
 import ru.liga.model.Currency;
 import ru.liga.model.Period;
 import ru.liga.model.Rate;
@@ -17,20 +20,25 @@ import java.util.stream.Collectors;
 
 public class LinearRegression implements ForecastService {
 
-    private InMemoryRatesRepository repository;
-    private LinearRegressionAlgorithm algorithm;
+    private static final Logger logger = LoggerFactory.getLogger(LinearRegression.class);
+
+    private final InMemoryRatesRepository repository;
 
     public LinearRegression(InMemoryRatesRepository repository) {
         this.repository = repository;
     }
 
     private void supplementRates(Currency currency, LocalDate dateFrom, List<Rate> rates) {
+        logger.debug("Rates calculated before the required date for currency: {}, for date: {}", currency, dateFrom.toString());
         while (!Objects.equals(rates.get(rates.size() - 1).getDate(), dateFrom.minusDays(1))) {
             rates.add(getDayRateFromRates(currency, rates));
         }
+        logger.info("Rates calculated before the required date");
     }
 
     private Rate getDayRateFromRates(Currency currency, List<Rate> rates) {
+        logger.debug("Forecasting for the day based on the list of forecasts: currency: {}", currency);
+
         List<BigDecimal> listRateFromData = rates
                 .stream()
                 .sorted(Comparator.comparing(Rate::getDate)
@@ -47,39 +55,52 @@ public class LinearRegression implements ForecastService {
             daysArr[i] = i;
         }
 
-        algorithm = new LinearRegressionAlgorithm(daysArr, arrRateFromDataDouble);
+        LinearRegressionAlgorithm algorithm = new LinearRegressionAlgorithm(daysArr, arrRateFromDataDouble);
 
-
-        return new Rate(rates.get(rates.size() - 1).getDate().plusDays(1),
+        Rate rate = new Rate(rates.get(rates.size() - 1).getDate().plusDays(1),
                 BigDecimal.valueOf(algorithm.predict(1.0)),
                 currency);
+
+
+        logger.debug("Forecast for the day based on the list of forecasts: {}", rate);
+        return rate;
     }
 
     @Override
-    public Rate oneDayForecast(Currency currency, LocalDate date) {
-        List<Rate> rates = null;
+    public Rate oneDayForecast(Currency currency, LocalDate date) throws DataException {
+        logger.debug("Single date forecast: currency: {} date: {}", currency, date.toString());
+
+        List<Rate> rates;
         try {
             rates = FillInEmptyDate.fill(currency, repository.getData(30, currency));
         } catch (IOException e) {
-            System.out.println("Ошибка чтения данных из файла валюты " + currency + "!");
+            logger.error(e.getMessage(), e);
             e.printStackTrace();
+            throw new DataException("Ошибка чтения данных из файла валюты " + currency + "!");
         }
 
         supplementRates(currency, date, rates);
-        return getDayRateFromRates(currency, rates);
+
+        Rate rate = getDayRateFromRates(currency, rates);
+        logger.info("One day forecast successfully built");
+        logger.debug("One day forecast:{}", rate);
+        return rate;
 
     }
 
     @Override
-    public List<Rate> periodForecast(Currency currency, Period period) {
+    public List<Rate> periodForecast(Currency currency, Period period) throws DataException {
+        logger.debug("Period forecasting:{} {}", currency, period.toString());
+
         List<Rate> forecasts = new ArrayList<>();
-        List<Rate> rates = null;
+        List<Rate> rates;
 
         try {
             rates = FillInEmptyDate.fill(currency, repository.getData(30, currency));
         } catch (IOException e) {
-            System.out.println("Ошибка чтения данных из файла валюты " + currency + "!");
+            logger.debug(e.getMessage(), e);
             e.printStackTrace();
+            throw new DataException("Ошибка чтения данных из файла валюты " + currency + "!");
         }
 
         supplementRates(currency, LocalDate.now().plusDays(1), rates);
@@ -100,6 +121,9 @@ public class LinearRegression implements ForecastService {
                 forecasts.add(ratesDay);
             }
         }
+
+        logger.info("Period forecast successfully built");
+        logger.debug("Period forecast:{}", forecasts);
         return forecasts;
     }
 }

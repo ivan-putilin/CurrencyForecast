@@ -1,5 +1,7 @@
 package ru.liga.utils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.liga.model.Currency;
 import ru.liga.model.Rate;
 
@@ -13,7 +15,11 @@ import java.util.stream.Collectors;
  */
 
 public class FillInEmptyDate {
+
+    private static final Logger logger = LoggerFactory.getLogger(FillInEmptyDate.class);
+
     public static List<Rate> fill(Currency currency, List<Rate> rates) {
+        logger.debug("Filling days without rates for currency: {}", currency);
         List<Rate> ratesReversed = rates.stream()
                 .sorted(Comparator
                         .comparing(Rate::getDate))
@@ -35,6 +41,9 @@ public class FillInEmptyDate {
                 filled.add(ratesReversed.get(i + 1));
             }
         }
+
+        logger.info("Days without rates are filled");
+
         return filled;
     }
 }

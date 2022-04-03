@@ -3,6 +3,9 @@ package ru.liga.service;
 import com.github.sh0nk.matplotlib4j.NumpyUtils;
 import com.github.sh0nk.matplotlib4j.Plot;
 import com.github.sh0nk.matplotlib4j.PythonExecutionException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import ru.liga.exceptions.DataException;
 import ru.liga.model.Rate;
 
 import java.io.IOException;
@@ -14,20 +17,15 @@ import java.util.stream.Collectors;
 
 public class ForecastPlot {
 
+    private static final Logger logger = LoggerFactory.getLogger(ForecastPlot.class);
+
     private final List<List<Rate>> rates;
-    private Double maxRate;
 
     public ForecastPlot(List<List<Rate>> rates) {
         this.rates = rates;
-        this.maxRate = rates.stream()
-                .flatMap(r -> r.stream())
-                .max(Comparator.comparing(Rate::getRate))
-                .map(r -> r.getRate())
-                .get()
-                .doubleValue();
     }
 
-    public void createPlot() {
+    public void createPlot() throws DataException {
 
         Plot plt = Plot.create();
         StringBuilder title = new StringBuilder("Forecast for ");
@@ -46,21 +44,25 @@ public class ForecastPlot {
                     .map(r -> r.getRate().doubleValue())
                     .collect(Collectors.toList());
             plt.plot().add(x, y).color(colors.get(i));
-            title.append("(" + colors.get(i) + ")").append(rate.get(0).getCurrency().toString()).append(", ");
+            title.append("(").append(colors.get(i)).append(")").append(rate.get(0).getCurrency().toString()).append(", ");
             i++;
         }
 
         plt.title(title.toString());
         plt.xlabel("Days:");
         plt.ylabel("Rates:");
-        plt.savefig("C:/Users/Ivan/IdeaProjects/LigaIntership/CurrencyForecast/forecast.png").dpi(200);
+        plt.savefig("./forecast.png").dpi(200);
         try {
             plt.executeSilently();
+            logger.info("Plot successfully built and saved");
         } catch (IOException e) {
+            logger.error(e.getMessage(), e);
             e.printStackTrace();
+            throw new DataException("Ошибка сохранения файла с графиком");
         } catch (PythonExecutionException e) {
-            System.out.println("Проблема с Питоном");
+            logger.error(e.getMessage(), e);
             e.printStackTrace();
+            throw new RuntimeException("Проблема с Питоном");
         }
     }
 }

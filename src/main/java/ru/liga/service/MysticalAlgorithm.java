@@ -1,5 +1,7 @@
 package ru.liga.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.liga.exceptions.DataException;
 import ru.liga.model.Currency;
 import ru.liga.model.Period;
@@ -17,6 +19,8 @@ import java.util.*;
 
 public class MysticalAlgorithm implements ForecastService {
 
+    private static final Logger logger = LoggerFactory.getLogger(MysticalAlgorithm.class);
+
     private final InMemoryRatesRepository repositoryOfRates;
     private final InMemoryDatesOfFullMoonRepository repositoryOfFullMoonDates;
     private final String fileOfMoonDates = "/List_of_Full_Moon.csv";
@@ -27,7 +31,7 @@ public class MysticalAlgorithm implements ForecastService {
     }
 
     private void supplementRates(Currency currency, LocalDate dateFrom, List<Rate> rates, List<LocalDate> datesOfMoon) throws DataException {
-
+        logger.debug("Rates calculated before the required date for currency: {}, for date: {}", currency, dateFrom.toString());
 
         if (rates.stream()
                 .noneMatch(r -> r.getDate().equals(dateFrom))) {
@@ -38,6 +42,7 @@ public class MysticalAlgorithm implements ForecastService {
                 .noneMatch(r -> r.getDate().equals(dateFrom))) {
             rates.add(randomRateFromBeforeRate(rates.get(rates.size() - 1).getDate(), rates, currency));
         }
+        logger.info("Rates calculated before the required date");
     }
 
     private BigDecimal generateRandomBigDecimalFromRange(BigDecimal min, BigDecimal max) {
@@ -46,6 +51,7 @@ public class MysticalAlgorithm implements ForecastService {
     }
 
     private Rate getDayRateFromRates(Currency currency, List<Rate> rates, LocalDate date, List<LocalDate> datesOfMoon) throws DataException {
+        logger.debug("Forecast for the day based on the list of forecasts: currency: {} date: {}", currency, date.toString());
 
         BigDecimal sum = new BigDecimal(0);
         BigDecimal firstMoonDate;
@@ -64,17 +70,22 @@ public class MysticalAlgorithm implements ForecastService {
             }
         }
 
-        return new Rate(date,
+        Rate rate = new Rate(date,
                 sum.divide(new BigDecimal(3), RoundingMode.HALF_UP),
                 currency);
+
+        logger.debug("Forecast for the day based on the list of forecasts: {}", rate);
+        return rate;
 
     }
 
     private BigDecimal findRateFromListOfRatesByDate(LocalDate date, List<Rate> rates, Currency currency, List<LocalDate> datesOfMoon) throws DataException {
+        logger.debug("Find rate from list of rates by date: currency: {} date: {}", currency, date.toString());
+
         BigDecimal rate;
 
         if (rates.stream()
-                .noneMatch(r -> r.getDate().equals(date))){
+                .noneMatch(r -> r.getDate().equals(date))) {
             supplementRates(currency, date, rates, datesOfMoon);
         }
 
@@ -85,20 +96,24 @@ public class MysticalAlgorithm implements ForecastService {
                     .get()
                     .getRate();
         } catch (Exception e) {
+            logger.debug(e.getMessage(), e);
             e.printStackTrace();
             throw new DataException("Не хватает данных для вычисления по данному алгоритму");
         }
-
+        logger.debug("Rate from list of rates by date: currency: {} date: {}", currency, rate);
         return rate;
     }
 
     @Override
     public Rate oneDayForecast(Currency currency, LocalDate date) throws DataException {
+        logger.debug("Single date forecast: currency: {} date: {}", currency, date.toString());
+
         List<Rate> rates;
         List<LocalDate> datesOfMoon;
         try {
             rates = FillInEmptyDate.fill(currency, repositoryOfRates.getAllData(currency));
         } catch (IOException e) {
+            logger.error(e.getMessage(), e);
             e.printStackTrace();
             throw new DataException("Ошибка чтения данных из файла валюты " + currency + "!");
         }
@@ -108,16 +123,22 @@ public class MysticalAlgorithm implements ForecastService {
             datesOfMoon.sort(Comparator.comparing(LocalDate::getChronology));
             Collections.reverse(datesOfMoon);
         } catch (IOException e) {
+            logger.error(e.getMessage(), e);
             e.printStackTrace();
             throw new DataException("Ошибка чтения файла с датами полнолуний!");
         }
 
-        return getDayRateFromRates(currency, rates, date, datesOfMoon);
+        Rate rate = getDayRateFromRates(currency, rates, date, datesOfMoon);
+        logger.info("One day forecast successfully built");
+        logger.debug("One day forecast:{}", rate);
+        return rate;
 
     }
 
     @Override
     public List<Rate> periodForecast(Currency currency, Period period) throws DataException {
+        logger.debug("Period forecast:{} {}", currency, period.toString());
+
         List<Rate> forecasts = new ArrayList<>();
         List<Rate> rates;
         List<LocalDate> datesOfMoon;
@@ -125,6 +146,7 @@ public class MysticalAlgorithm implements ForecastService {
         try {
             rates = FillInEmptyDate.fill(currency, repositoryOfRates.getAllData(currency));
         } catch (IOException e) {
+            logger.error(e.getMessage(), e);
             e.printStackTrace();
             throw new DataException("Ошибка чтения данных из файла валюты " + currency + "!");
         }
@@ -133,6 +155,7 @@ public class MysticalAlgorithm implements ForecastService {
             datesOfMoon = ParseCSV.parseDatesOfMoon(repositoryOfFullMoonDates.getData(), fileOfMoonDates);
             datesOfMoon.sort(Comparator.reverseOrder());
         } catch (IOException e) {
+            logger.error(e.getMessage(), e);
             e.printStackTrace();
             throw new DataException("Ошибка чтения файла с датами полнолуний!");
         }
@@ -157,6 +180,8 @@ public class MysticalAlgorithm implements ForecastService {
                 forecasts.add(ratesDay);
             }
         }
+        logger.info("Period forecast successfully built");
+        logger.debug("Period forecast:{}", forecasts);
         return forecasts;
     }
 
