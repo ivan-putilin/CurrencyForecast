@@ -6,10 +6,7 @@ import ru.liga.model.Currency;
 import ru.liga.model.Rate;
 import ru.liga.telegram.BotSettings;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -20,7 +17,7 @@ public class ParseCSV {
     private static final Logger logger = LoggerFactory.getLogger(ParseCSV.class);
 
     public static List<Rate> parse(int lineNumber, List<Rate> data, String fileName) throws IOException {
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(Objects.requireNonNull(ParseCSV.class.getResourceAsStream(fileName)), "windows-1251"))) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new BufferedInputStream(new FileInputStream("src/main/resources" + fileName)), "windows-1251"))) {
             int count = 0;
             String[] line;
 
