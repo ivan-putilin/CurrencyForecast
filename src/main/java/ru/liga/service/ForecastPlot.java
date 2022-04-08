@@ -1,6 +1,5 @@
 package ru.liga.service;
 
-import com.github.sh0nk.matplotlib4j.NumpyUtils;
 import com.github.sh0nk.matplotlib4j.Plot;
 import com.github.sh0nk.matplotlib4j.PythonExecutionException;
 import org.slf4j.Logger;
@@ -11,7 +10,6 @@ import ru.liga.model.Rate;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 

@@ -6,11 +6,11 @@ import java.util.List;
 public class Command {
     private final List<Currency> currencies;
     private final Period period;
-    private final List<LocalDate> periodDate;
+    private final LocalDate periodDate;
     private final String algorithm;
     private final String output;
 
-    public Command(List<Currency> currencies, Period period, List<LocalDate> periodDate, String algorithm, String output) {
+    public Command(List<Currency> currencies, Period period, LocalDate periodDate, String algorithm, String output) {
         this.currencies = currencies;
         this.period = period;
         this.periodDate = periodDate;
@@ -26,7 +26,7 @@ public class Command {
         return period;
     }
 
-    public List<LocalDate> getPeriodDate() {
+    public LocalDate getPeriodDate() {
         return periodDate;
     }
 

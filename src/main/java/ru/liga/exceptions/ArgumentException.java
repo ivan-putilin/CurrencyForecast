@@ -1,7 +1,7 @@
 package ru.liga.exceptions;
 
-public class ParameterException extends Exception{
-    public ParameterException(String message) {
+public class ArgumentException extends Exception{
+    public ArgumentException(String message) {
         super(message + "\n" +
                 "Пример запроса для прогноза на день(на завтра или на дату): \"rate TRY -date tomorrow -alg moon\"\n" +
                 "Пример запроса прогноза на период(неделя или месяц), с указанием формата вывода: \"rate USD -period week -alg moon -output list\"\n" +

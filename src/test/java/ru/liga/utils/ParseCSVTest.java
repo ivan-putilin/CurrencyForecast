@@ -8,11 +8,9 @@ import ru.liga.model.Rate;
 
 import java.io.*;
 import java.math.BigDecimal;
-import java.nio.file.Files;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 import static org.junit.Assert.*;
 
@@ -26,6 +24,7 @@ public class ParseCSVTest {
         try (OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(dir),"windows-1251")) {
             writer.write("nominal;data;curs;cdx\n");
             writer.write("1;05.03.2022;\"116,5312\";ЕВРО\n");
+            writer.write("1;06.03.2022;\"119,5312\";ЕВРО\n");
         } catch (IOException e) {
             e.printStackTrace();
         }

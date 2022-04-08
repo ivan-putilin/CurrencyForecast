@@ -11,10 +11,8 @@ import ru.liga.utils.FillInEmptyDate;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.time.LocalDate;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class ActualAlgorithm implements ForecastService {
 
@@ -39,17 +37,26 @@ public class ActualAlgorithm implements ForecastService {
         BigDecimal rate;
         try {
             rate = new BigDecimal(0);
-            BigDecimal rateTwoYearsAgo = rates.stream()
+            if (rates.stream()
                     .filter(x -> x.getDate().isEqual(date.minusYears(2)))
                     .findFirst()
-                    .map(Rate::getRate)
-                    .get();
-            BigDecimal rateThreeYearsAgo = rates.stream()
+                    .map(Rate::getRate).isPresent()
+                    && rates.stream()
                     .filter(x -> x.getDate().isEqual(date.minusYears(3)))
                     .findFirst()
-                    .map(Rate::getRate)
-                    .get();
-            rate = rate.add(rateTwoYearsAgo).add(rateThreeYearsAgo);
+                    .map(Rate::getRate).isPresent()) {
+                BigDecimal rateTwoYearsAgo = rates.stream()
+                        .filter(x -> x.getDate().isEqual(date.minusYears(2)))
+                        .findFirst()
+                        .map(Rate::getRate)
+                        .get();
+                BigDecimal rateThreeYearsAgo = rates.stream()
+                        .filter(x -> x.getDate().isEqual(date.minusYears(3)))
+                        .findFirst()
+                        .map(Rate::getRate)
+                        .get();
+                rate = rate.add(rateTwoYearsAgo).add(rateThreeYearsAgo);
+            }
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             e.printStackTrace();
