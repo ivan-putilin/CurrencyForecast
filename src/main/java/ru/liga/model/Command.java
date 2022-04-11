@@ -48,4 +48,23 @@ public class Command {
                 ", output='" + output + '\'' +
                 '}';
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (obj == null || obj.getClass() != this.getClass()) {
+            return false;
+        }
+
+
+
+        Command anyCommand = (Command) obj;
+        return currencies.equals(anyCommand.getCurrencies())
+                && period.equals(anyCommand.getPeriod())
+                && (periodDate.equals(anyCommand.getPeriodDate()))
+                && algorithm.equals(anyCommand.getAlgorithm())
+                && output.equals(anyCommand.getOutput());
+    }
 }

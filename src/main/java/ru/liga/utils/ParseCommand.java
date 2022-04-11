@@ -35,7 +35,7 @@ public class ParseCommand {
             command = new Command(
                     getCurrency(args),
                     period,
-                    null,
+                    LocalDate.parse("01.01.2022", DateTimeUtil.PARSE_FORMATTER),
                     getAlgorithm(args),
                     getOutput(args)
             );

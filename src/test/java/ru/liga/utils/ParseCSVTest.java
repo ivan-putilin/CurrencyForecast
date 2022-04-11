@@ -31,7 +31,7 @@ public class ParseCSVTest {
     }
 
     @Test
-    public void parseFileTest() throws IOException {
+    public void whenRepositoryContainsExpectDataThenValid() throws IOException {
         List<Rate> rates = new ArrayList<>();
         String fileName = "/" + dir.getName();
         List<Rate> ratesActual = ParseCSV.parse(1, rates, fileName);

@@ -15,9 +15,8 @@
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <org.projectlombok.version>1.18.16</org.projectlombok.version>
         <apache.poi.version>4.1.2</apache.poi.version>
-        <telegram.version>5.0.1</telegram.version>
+        <telegram.version>5.7.1</telegram.version>
     </properties>
 
     <dependencies>
@@ -38,12 +37,6 @@
             <version>${telegram.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>${org.projectlombok.version}</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
             <groupId>com.github.sh0nk</groupId>
             <artifactId>matplotlib4j</artifactId>
             <version>0.5.0</version>
@@ -52,6 +45,12 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>1.7.36</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
@@ -63,8 +62,15 @@
             <artifactId>logback-core</artifactId>
             <version>1.2.11</version>
         </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>3.22.0</version>
+            <scope>test</scope>
+        </dependency>
 
     </dependencies>
+
 
     <build>
         <plugins>
