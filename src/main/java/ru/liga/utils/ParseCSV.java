@@ -1,21 +1,23 @@
 package ru.liga.utils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.liga.model.Currency;
 import ru.liga.model.Rate;
+import ru.liga.telegram.BotSettings;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Locale;
+import java.util.Objects;
 
 public class ParseCSV {
+
+    private static final Logger logger = LoggerFactory.getLogger(ParseCSV.class);
+
     public static List<Rate> parse(int lineNumber, List<Rate> data, String fileName) throws IOException {
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(ParseCSV.class.getResourceAsStream(fileName)))) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new BufferedInputStream(new FileInputStream("src/main/resources" + fileName)), "windows-1251"))) {
             int count = 0;
             String[] line;
 
@@ -24,15 +26,52 @@ public class ParseCSV {
             }
             while (reader.ready() && count < lineNumber) {
                 line = reader.readLine().split(";");
+
                 Rate rate = new Rate(
-                        LocalDate.parse(line[0], DateTimeUtil.PARSE_FORMATTER),
-                        BigDecimal.valueOf(Double.parseDouble(line[1].replace(',', '.'))),
-                        getCurrency(line[2])
+                        LocalDate.parse(line[1], DateTimeUtil.PARSE_FORMATTER),
+                        new BigDecimal(line[2].replace(',', '.').replace("\"", "")),
+                        getCurrency(line[3])
                 );
                 data.add(rate);
+
                 count++;
             }
         }
+        logger.info("Files of rates was parsed");
+        return data;
+    }
+
+    public static List<LocalDate> parseDatesOfMoon(List<LocalDate> data, String fileName) throws IOException {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(Objects.requireNonNull(ParseCSV.class.getResourceAsStream(fileName)), "windows-1251"))) {
+            String line;
+            while (reader.ready()) {
+                line = reader.readLine();
+                data.add(LocalDate.parse(line, DateTimeUtil.PARSE_FORMATTER));
+            }
+        }
+        logger.info("Files dates of full moons was parsed");
+        return data;
+    }
+
+    public static List<Rate> parseAll(List<Rate> data, String fileName) throws IOException {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(Objects.requireNonNull(ParseCSV.class.getResourceAsStream(fileName)), "windows-1251"))) {
+            String[] line;
+
+            if (reader.ready()) {
+                reader.readLine();
+            }
+            while (reader.ready()) {
+                line = reader.readLine().split(";");
+
+                Rate rate = new Rate(
+                        LocalDate.parse(line[1], DateTimeUtil.PARSE_FORMATTER),
+                        new BigDecimal(line[2].replace(',', '.').replace("\"", "")),
+                        getCurrency(line[3])
+                );
+                data.add(rate);
+            }
+        }
+        logger.info("Files of rates was parsed");
         return data;
     }
 
@@ -47,6 +86,12 @@ public class ParseCSV {
                 break;
             case "Турецкая лира":
                 currency = Currency.TRY;
+                break;
+            case "Армянский драм":
+                currency = Currency.AMD;
+                break;
+            case "Болгарский лев":
+                currency = Currency.BGN;
                 break;
             default:
                 currency = null;

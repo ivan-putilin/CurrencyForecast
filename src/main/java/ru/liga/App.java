@@ -1,24 +1,33 @@
 package ru.liga;
 
-import ru.liga.controller.Controller;
-import ru.liga.repository.InMemoryRatesRepository;
-import ru.liga.service.ForecastAverage7DaysService;
-import ru.liga.service.ForecastService;
-import ru.liga.utils.ControllerSelection;
-import ru.liga.view.Console;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.telegram.telegrambots.meta.TelegramBotsApi;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
+import ru.liga.telegram.Bot;
+import ru.liga.telegram.BotSettings;
 
-import java.io.IOException;
+import java.io.*;
+
 
 public class App {
-    public static void main(String[] args) throws IOException {
-        InMemoryRatesRepository repository = new InMemoryRatesRepository();
-        ForecastService service = new ForecastAverage7DaysService(repository);
-        Console console = new Console();
 
-        while (true) {
-            String command = console.insertCommand();
-            Controller controller = ControllerSelection.getController(command, service, console);
-            controller.operate();
+    private static final Logger logger = LoggerFactory.getLogger(App.class);
+    private static final BotSettings botSettings = BotSettings.getInstance();
+
+    public static void main(String[] args) {
+        String botName = botSettings.getBotName();
+        String botToken = botSettings.getBotToken();
+
+        try {
+            TelegramBotsApi botsApi = new TelegramBotsApi(DefaultBotSession.class);
+            botsApi.registerBot(new Bot(botName, botToken));
+            logger.info("Bot started!");
+            logger.debug("Bot Name:{} Bot Token:{}", botName, botToken);
+        } catch (TelegramApiException e) {
+            logger.error(e.getMessage(), e);
+            e.printStackTrace();
         }
     }
 }
